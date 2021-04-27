@@ -1,5 +1,3 @@
-import math
-
 import pygame
 from random import randint
 from math import sqrt, pow, sin, cos, pi
