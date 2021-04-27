@@ -1,3 +1,8 @@
+'''
+press V to display velocity vectors
+
+'''
+
 import pygame
 from random import randint
 from math import sqrt, pow, sin, cos, pi
@@ -14,9 +19,13 @@ num_of_ants = 3
 ants_vel = []
 ants_pos = []
 
-VEL = 4
+VEL = 2
 target = []
 wand_counter = []
+
+vec_visibility = True
+VEC_LENGTH = 50
+
 for _ in range(num_of_ants):
     ants_pos.append(vec(randint(0, WIDTH), randint(0, HEIGHT)))
     ants_vel.append(vec(1, 0))
@@ -48,6 +57,13 @@ def foods():
         pygame.draw.circle(SCREEN, 'green', [foods_pos[fd].x, foods_pos[fd].y], 5)
 
 
+def velocity_vecs():
+    for antt in range(num_of_ants):
+        pygame.draw.line(SCREEN, 'red', [ants_pos[antt].x, ants_pos[antt].y],
+                         [ants_pos[antt].x + ants_vel[antt].x * VEC_LENGTH,
+                          ants_pos[antt].y + ants_vel[antt].y * VEC_LENGTH], 2)
+
+
 def feromon_to_home():
     pass
 
@@ -57,7 +73,7 @@ def feromon_to_food():
 
 
 def is_collision(a_pos, b_pos):
-    # Формула расчета дистанции между точками
+    # Calculating the distance between points (Формула расчета дистанции между точками)
     if distance_to(a_pos, b_pos) < 8:
         return True
     else:
@@ -95,6 +111,8 @@ while running:
                 pass
             if event.key == pygame.K_SPACE:
                 pass
+            if event.key == pygame.K_v:
+                vec_visibility = not vec_visibility
 
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_RIGHT or pygame.K_LEFT:
@@ -105,35 +123,36 @@ while running:
         ants_pos[ant] += ants_vel[ant] * VEL
 
         if ants_pos[ant].x <= 0:  # Барьеры слева и справа
-            ants_vel[ant] = ants_vel[ant].reflect(vec(1,0))
+            ants_vel[ant] = ants_vel[ant].reflect(vec(1, 0))
             ants_pos[ant].x = 0
         elif ants_pos[ant].x >= WIDTH:
-            ants_vel[ant] = ants_vel[ant].reflect(vec(-1,0))
+            ants_vel[ant] = ants_vel[ant].reflect(vec(-1, 0))
             ants_pos[ant].x = WIDTH
         elif ants_pos[ant].y <= 0:
-            ants_vel[ant] = ants_vel[ant].reflect(vec(0,-1))
+            ants_vel[ant] = ants_vel[ant].reflect(vec(0, -1))
             ants_pos[ant].y = 0
         elif ants_pos[ant].y >= HEIGHT:
-            ants_vel[ant] = ants_vel[ant].reflect(vec(0,1))
+            ants_vel[ant] = ants_vel[ant].reflect(vec(0, 1))
             ants_pos[ant].y = HEIGHT
 
         for food in range(num_of_food):
-            dist = distance_to(ants_pos[ant], foods_pos[food], )  # Определяем дистанцию муравьев о еды
-            if dist <= FIND_DISTANCE:  # Идет к еде если она в радиусе обнаружения
+            dist = distance_to(ants_pos[ant],
+                               foods_pos[food], )  # distance to food (Определяем дистанцию муравьев о еды)
+            if dist <= FIND_DISTANCE:  # Go to food if it in detection radius (Идет к еде если она в радиусе обнаружения)
                 ants_vel[ant] = direction_to(ants_pos[ant], foods_pos[food]) * VEL
-            else:  # Алгоритм рандомного блуждания
+            else:  # Wandering algorithm (Алгоритм рандомного блуждания)
                 if wand_counter[ant] == 1:
                     target[ant] = ants_vel[ant].rotate(randint(-90, 90))
                 ants_vel[ant] = target[ant]
                 wand_counter[ant] += 1
                 if wand_counter[ant] >= 60 * 2:
                     wand_counter[ant] = 1
-            print(ants_pos[ant])
-            # Определяем коллизию муравьев с едой
+            # Check collision of the ants with food(Определяем коллизию муравьев с едой)
             if is_collision(ants_pos[ant], foods_pos[food]):
                 foods_pos[food].x = randint(0, WIDTH)
                 foods_pos[food].y = randint(0, HEIGHT)
-
+    if vec_visibility:
+        velocity_vecs()
     foods()
     ants()
     clock.tick(60)
