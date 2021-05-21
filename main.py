@@ -8,7 +8,7 @@ from random import randint
 from math import sqrt, pow, sin, cos, pi
 
 vec = pygame.math.Vector2
-
+FPS = 60
 RAD = pi / 180.0
 WIDTH, HEIGHT = 800, 600
 SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -33,7 +33,7 @@ for _ in range(num_of_ants):
     wand_counter.append(1)
 
 # Food
-num_of_food = 1
+num_of_food = 10
 foods_pos = []
 for _ in range(num_of_food):
     foods_pos.append(vec(randint(0, WIDTH), randint(0, HEIGHT)))
@@ -122,38 +122,46 @@ while running:
     for ant in range(num_of_ants):  # Задаем угол движения
         ants_pos[ant] += ants_vel[ant] * VEL
 
-        if ants_pos[ant].x <= 0:  # Барьеры слева и справа
-            ants_vel[ant] = ants_vel[ant].reflect(vec(1, 0))
-            ants_pos[ant].x = 0
-        elif ants_pos[ant].x >= WIDTH:
-            ants_vel[ant] = ants_vel[ant].reflect(vec(-1, 0))
-            ants_pos[ant].x = WIDTH
-        elif ants_pos[ant].y <= 0:
-            ants_vel[ant] = ants_vel[ant].reflect(vec(0, -1))
-            ants_pos[ant].y = 0
-        elif ants_pos[ant].y >= HEIGHT:
-            ants_vel[ant] = ants_vel[ant].reflect(vec(0, 1))
-            ants_pos[ant].y = HEIGHT
-
+        dist = [-1, 100000000000]
         for food in range(num_of_food):
-            dist = distance_to(ants_pos[ant],
-                               foods_pos[food], )  # distance to food (Определяем дистанцию муравьев о еды)
-            if dist <= FIND_DISTANCE:  # Go to food if it in detection radius (Идет к еде если она в радиусе обнаружения)
-                ants_vel[ant] = direction_to(ants_pos[ant], foods_pos[food]) * VEL
+
+            cur_dist = distance_to(ants_pos[ant], foods_pos[food])
+            # distance to food (Определяем дистанцию муравьев о еды)
+            if FIND_DISTANCE >= cur_dist and cur_dist < dist[1]:
+                dist = [food, cur_dist]
+            if food + 1 == num_of_food and dist[0] != -1:  # Go to food if it in detection radius (Идет к еде если она в радиусе обнаружения)
+                wand_counter[ant] = 2
+                print(dist)
+                ants_vel[ant] = direction_to(ants_pos[ant], foods_pos[dist[0]]).normalize()
             else:  # Wandering algorithm (Алгоритм рандомного блуждания)
                 if wand_counter[ant] == 1:
                     target[ant] = ants_vel[ant].rotate(randint(-90, 90))
-                ants_vel[ant] = target[ant]
+                    ants_vel[ant] = target[ant]
                 wand_counter[ant] += 1
-                if wand_counter[ant] >= 60 * 2:
+                if wand_counter[ant] >= FPS * 8:
                     wand_counter[ant] = 1
             # Check collision of the ants with food(Определяем коллизию муравьев с едой)
             if is_collision(ants_pos[ant], foods_pos[food]):
                 foods_pos[food].x = randint(0, WIDTH)
                 foods_pos[food].y = randint(0, HEIGHT)
+
+        if ants_pos[ant].x <= 0:  # Барьеры слева и справа
+            ants_vel[ant] = ants_vel[ant].reflect(vec(1, 0))
+            ants_pos[ant].x = 1
+        elif ants_pos[ant].x >= WIDTH:
+            ants_vel[ant] = ants_vel[ant].reflect(vec(-1, 0))
+            ants_pos[ant].x = WIDTH - 1
+        elif ants_pos[ant].y <= 0:
+            ants_vel[ant] = ants_vel[ant].reflect(vec(0, -1))
+            ants_pos[ant].y = 0 + 1
+        elif ants_pos[ant].y >= HEIGHT:
+            ants_vel[ant] = ants_vel[ant].reflect(vec(0, 1))
+            ants_pos[ant].y = HEIGHT - 1
+
     if vec_visibility:
         velocity_vecs()
     foods()
     ants()
-    clock.tick(60)
+    # print(wand_counter)
+    clock.tick(FPS)
     pygame.display.update()  # Обновляем экран
